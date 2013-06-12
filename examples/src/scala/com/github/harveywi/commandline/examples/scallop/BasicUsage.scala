@@ -31,24 +31,37 @@ import shapeless._
 case class BasicUsage(bananas: Option[Int], apples: Int, name: String)
 object BasicUsage extends App {
   // An optional parameter
-  val bananas = Opt[Option[Int]]('b', "Number of bananas", "Int", None, longName = "bananas")
+  val bananas = Opt[Option[Int]](
+    'b',
+    "Number of bananas",
+    "BananaCount",
+    None,
+    longName = "bananas")
 
   // Two required parameters
   val apples = Param[Int]("apples")
   val name = Param[String]("name")
 
-  // Description of the program (needed for generating a pretty-printed usage message)
-  val desc = CommandDescription(
+  // Description of the program (needed for generating a pretty-printed usage 
+  // message)
+  val description = CommandDescription(
     name = "basic-usage",
     quickBlurb = "A demonstration of basic CommandLineParser usage.",
-    details = "Any additional notes that might helpful to potential users of your " +
-        "software should go here.  This stuff is printed at the bottom of the usage " +
-        "message.  Don't forget to include https://my.fsf.org/donate!",
+    details = "Any additional notes that might helpful to potential users of " +
+      "your software should go here.  This stuff is printed at the bottom " +
+      "of the usage message.  Don't forget to include " +
+      "https://my.fsf.org/donate!",
     version = "1.0")
 
-  // Build a CommandLineParser[BasicUsage] with the given optional and required parameters
-  val cmd = CommandLineParser.builder(desc, apply _).setOpts(bananas :: HNil).setParams(apples :: name :: HNil).build()
+  // Build a CommandLineParser[BasicUsage] with the given optional and 
+  // required parameters
+  val cmd = CommandLineParser.
+    builder(description, apply _).
+    setOpts(bananas :: HNil).
+    setParams(apples :: name :: HNil).
+    build()
 
   // Yesssss!
-  assert(cmd.parse("-b 10 4 bigBunny") == Success(BasicUsage(Some(10), 4, "bigBunny")), "Noooooo!")
+  assert(cmd.parse("-b 10 4 bigBunny") ==
+    Success(BasicUsage(Some(10), 4, "bigBunny")), "Noooooo!")
 }
