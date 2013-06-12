@@ -27,8 +27,8 @@ import shapeless._
 import java.io.File
 
 /**
- * Note that optional parameters must precede required (positional) parameters in the
- * case class constructor's list of parameters.
+ * Note that optional parameters must precede required (positional) parameters
+ * in the case class constructor's list of parameters.
  */
 case class OptionTypesAndDefinitions(
   a: Int, // put optional parameters at the beginning
@@ -54,45 +54,50 @@ object OptionTypesAndDefinitions extends App {
   val c = Opt[Option[Float]]('c', "Description for c", "Int", None)
   val d = Opt[Option[Double]]('d', "Description for d", "Int", None)
 
-  // Built-in constraints for numerical parameters.  Here, we ensure that 0 <= e <= 32767
+  // Built-in constraints for numerical parameters.  Here, we ensure that 
+  // 0 <= e <= 32767
   val e = Opt[Short]('e', "Description for e", "Short", 100).lteq(32767).gteq(0)
 
   // Custom constraints.  Note that they can be chained together as shown.
-  val f = Opt[Long]('f', "Description for f", "Long", 0L).require(x => x % 2 == 0, "Value must be even").require { x =>
-    if (x == 42) {
-      Failure("42 is really inappropriate")
-    } else if (x == 100) {
-      Success(Int.MaxValue)
-    } else {
-      Failure("The only way to succeed here is to set '-f' to be 100")
+  val f = Opt[Long]('f', "Description for f", "Long", 0L).
+    require(_ % 2 == 0, "Value must be even").require { x =>
+      if (x == 42) {
+        Failure("42 is really inappropriate")
+      } else if (x == 100) {
+        Success(Int.MaxValue)
+      } else {
+        Failure("The only way to succeed here is to set '-f' to be 100")
+      }
     }
-  }
 
   // Some built-in constraints for files
-  val g = Opt[File]('g', "Description for g", "File", new File("/dev/null")).fileExists.fileIsDirectory
+  val g = Opt[File]('g', "Description for g", "File",
+    new File("/dev/null")).fileExists.fileIsDirectory
 
   // Flags correspond to Boolean parameters with default value = false
-  val h = Flag('h', "Description for h", longName = "really-really-long-name-for-h")
+  val h = Flag('h', "Description for h",
+    longName = "really-really-long-name-for-h")
 
   // KeyValue[K, V] instances correspond to Map[K, V] parameters.
   val i = KeyValue[String, Int]('i', "Description for i", "keyName", "Int")
 
   // Positional parameters.
   val j = Param[List[Int]]("j")
-  val k = Param[String]("k").require(_.contains("asdf"), "Parameter 'k' must contain substring 'asdf'.")
+  val k = Param[String]("k").require(_.contains("asdf"),
+    "Parameter 'k' must contain substring 'asdf'.")
   val l = Param[List[Double]]("l")
   val m = Param[Int]("m").gt(0).lteq(42)
 
   val desc = CommandDescription(
     name = "option-types-and-definitions",
     quickBlurb = "A demonstration of different option types and definitions.",
-    details = "IN the following pages I offer nothing more than simple facts, " +
-      "plain arguments, and common sense: and have no other preliminaries " +
-      "to settle with the reader, than that he will divest himself of " +
-      "prejudice and prepossession, and suffer his reason and his feelings " +
-      "to determine for themselves that he will put on, or rather that he " +
-      "will not put off, the true character of a man, and generously enlarge " +
-      "his views beyond the present day.",
+    details = "IN the following pages I offer nothing more than simple " +
+    	"facts, plain arguments, and common sense: and have no other " +
+    	"preliminaries to settle with the reader, than that he will divest " +
+    	"himself of prejudice and prepossession, and suffer his reason and his " +
+    	"feelings to determine for themselves that he will put on, or rather " +
+    	"that he will not put off, the true character of a man, and generously " +
+    	"enlarge his views beyond the present day.",
     version = "1.0")
 
   val cmd = CommandLineParser.builder(desc, apply _).

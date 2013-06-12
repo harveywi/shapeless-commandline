@@ -26,8 +26,11 @@ import scalaz.{ Success, Failure }
 import shapeless._
 
 object Subcommands extends App {
+
   trait AppleSubcommand
-  case class Apple(isBig: Boolean, listOfInts: List[Int], subcommand: AppleSubcommand)
+
+  case class Apple(isBig: Boolean, listOfInts: List[Int],
+    subcommand: AppleSubcommand)
   object Apple {
     val description = CommandDescription(
       name = "apple",
@@ -36,27 +39,42 @@ object Subcommands extends App {
       version = "1.0")
 
     val opts = Flag('b',
-      "Designates that the apple tree/pie is big (as opposed to small).  By default, " +
-        "trees and pies are not big.", longName = "is-big") :: HNil
+      "Designates that the apple tree/pie is big (as opposed to small).  " +
+        "By default, trees and pies are not big.", longName = "is-big") :: HNil
+
     val params = Param[List[Int]]("int1 int2 ...") :: HNil
+
     val subcommands = Tree.cmd :: Pie.cmd :: HNil
 
-    val cmd = CommandLineParser.builder(description, apply _) setOpts (opts) setParams (params) setSubcommands (subcommands) build ()
+    val cmd = CommandLineParser.
+      builder(description, apply _).
+      setOpts(opts).
+      setParams(params).
+      setSubcommands(subcommands).
+      build()
   }
 
   case class Tree(kindOfTree: String, howMany: Int) extends AppleSubcommand
   object Tree {
     val params = Param[String]("kindOfTree") :: Param[Int]("howMany") :: HNil
 
-    val description = CommandDescription("tree", "quickBlurb goes here", "some details", "1.0")
-    val cmd = CommandLineParser.builder(description, apply _) setParams (params) build ()
+    val description = CommandDescription(
+      "tree", "quickBlurb goes here", "some details", "1.0")
+    val cmd = CommandLineParser.
+      builder(description, apply _).
+      setParams(params).
+      build()
   }
 
   case class Pie(calories: Long, numSlices: Int) extends AppleSubcommand
   object Pie {
     val params = Param[Long]("calories") :: Param[Int]("numSlices") :: HNil
-    val description = CommandDescription("pie", "quickBlurb goes here", "some details", "1.0")
-    val cmd = CommandLineParser.builder(description, apply _) setParams (params) build ()
+    val description = CommandDescription(
+      "pie", "quickBlurb goes here", "some details", "1.0")
+    val cmd = CommandLineParser.
+      builder(description, apply _).
+      setParams(params).
+      build()
   }
 
   assert(Apple.cmd.parse("-b 1 2 3 4 5 tree tall 42") ==

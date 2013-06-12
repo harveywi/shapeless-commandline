@@ -5,11 +5,22 @@ shapeless-commandline is a [Scala](http://www.scala-lang.org) library which
 takes advantage of [Miles Sabin's](https://github.com/milessabin)
 [shapeless](https://github.com/milessabin/shapeless) library as well as
 [Scalaz](https://github.com/scalaz/scalaz) to perform typesafe and functional
-command line argument parsing.
-
-This work was heavily inspired by the
+command line argument parsing.  This work was heavily inspired by the
 [Scallop](https://github.com/Rogach/scallop) library by
 [Rogach](https://github.com/Rogach).
+
+This library supports many (but not all) of the features provided by scallop. 
+Here is a menu of what is included:
+* POSIX-style short option names (-x -y -z 42) with grouping (-xyz42, -xyz 42)
+* GNU-style long option names (--send-more-chuck-berry)
+* Key-value arguments (-Dkey1=value1 -D key2=value2)
+* Simple support for custom command line parsers using the enrich-my-library pattern
+* Similar trailing arguments matching provided by scallop (but here be dragons...only use it if ambiguous parsing can't cause problems)
+* Subcommands
+* Post-parse argument validation
+
+The shapeless-commandline library is hot off the press, and there are a lot of rough
+edges.  Ouch, it's so hot!
 
 This library is one part in a trilogy
 ([I. shapeless-serialization](https://github.com/harveywi/shapeless-serialization),
@@ -81,29 +92,33 @@ import shapeless._
  * Example taken from https://github.com/Rogach/scallop#fancy-things
  *
  * Currently, the KeyValue options require the option flag to appear before
- each key=value pair, though
- * this should not be too much trouble to fix in a later version.
+ * each key=value pair, though this should not be too much trouble to fix in a
+ * later version.
  */
 case class FancyThings(props: Map[String, String], firstListName: String,
-firstList: List[Int], secondListName: String, secondList: List[Double])
+  firstList: List[Int], secondListName: String, secondList: List[Double])
 object FancyThings extends App {
-  val props = KeyValue[String, String]('E', "String-String properties",
-  "keyString", "valueString", longName = "props")
+  val props = KeyValue[String, String](
+    'E', "String-String properties", "keyString", "valueString",
+    longName = "props")
   val firstListName = Param[String]("firstListName")
   val firstList = Param[List[Int]]("firstList")
   val secondListName = Param[String]("secondListName")
   val secondList = Param[List[Double]]("secondList")
-  val desc = CommandDescription("fancy-things", "A demonstration of fancy
-  things.", "There are no additional notes.", "1.0")
+
+  val desc = CommandDescription(
+    "fancy-things",
+    "A demonstration of fancy things.",
+    "There are no additional notes.", "1.0")
+
   val cmd = CommandLineParser.
     builder(desc, apply _).
     setOpts(props :: HNil).
     setParams(firstListName :: firstList :: secondListName :: secondList ::
-    HNil).
-    build()
+      HNil).build()
 
-  assert(cmd.parse("-Ekey1=value1 -E key2=value2 -E key3=value3 first 1 2 3
-  second 4 5 6") ==
+  assert(cmd.parse("-Ekey1=value1 -E key2=value2 -E key3=value3 " +
+    "first 1 2 3 second 4 5 6") ==
     Success(FancyThings(
       Map("key1" -> "value1", "key2" -> "value2", "key3" -> "value3"),
       "first", List(1, 2, 3),
@@ -121,8 +136,7 @@ import java.io.File
 
 /**
  * Note that optional parameters must precede required (positional) parameters
- in the
- * case class constructor's list of parameters.
+ * in the case class constructor's list of parameters.
  */
 case class OptionTypesAndDefinitions(
   a: Int, // put optional parameters at the beginning
@@ -148,53 +162,50 @@ object OptionTypesAndDefinitions extends App {
   val c = Opt[Option[Float]]('c', "Description for c", "Int", None)
   val d = Opt[Option[Double]]('d', "Description for d", "Int", None)
 
-  // Built-in constraints for numerical parameters.  Here, we ensure that 0 <=
-  e <= 32767
-  val e = Opt[Short]('e', "Description for e", "Short",
-  100).lteq(32767).gteq(0)
+  // Built-in constraints for numerical parameters.  Here, we ensure that 
+  // 0 <= e <= 32767
+  val e = Opt[Short]('e', "Description for e", "Short", 100).lteq(32767).gteq(0)
 
   // Custom constraints.  Note that they can be chained together as shown.
-  val f = Opt[Long]('f', "Description for f", "Long", 0L).require(x => x % 2
-  == 0, "Value must be even").require { x =>
-    if (x == 42) {
-      Failure("42 is really inappropriate")
-    } else if (x == 100) {
-      Success(Int.MaxValue)
-    } else {
-      Failure("The only way to succeed here is to set '-f' to be 100")
+  val f = Opt[Long]('f', "Description for f", "Long", 0L).
+    require(_ % 2 == 0, "Value must be even").require { x =>
+      if (x == 42) {
+        Failure("42 is really inappropriate")
+      } else if (x == 100) {
+        Success(Int.MaxValue)
+      } else {
+        Failure("The only way to succeed here is to set '-f' to be 100")
+      }
     }
-  }
 
   // Some built-in constraints for files
-  val g = Opt[File]('g', "Description for g", "File", new
-  File("/dev/null")).fileExists.fileIsDirectory
+  val g = Opt[File]('g', "Description for g", "File",
+    new File("/dev/null")).fileExists.fileIsDirectory
 
   // Flags correspond to Boolean parameters with default value = false
-  val h = Flag('h', "Description for h", longName =
-  "really-really-long-name-for-h")
+  val h = Flag('h', "Description for h",
+    longName = "really-really-long-name-for-h")
 
   // KeyValue[K, V] instances correspond to Map[K, V] parameters.
   val i = KeyValue[String, Int]('i', "Description for i", "keyName", "Int")
 
   // Positional parameters.
   val j = Param[List[Int]]("j")
-  val k = Param[String]("k").require(_.contains("asdf"), "Parameter 'k' must
-  contain substring 'asdf'.")
+  val k = Param[String]("k").require(_.contains("asdf"),
+    "Parameter 'k' must contain substring 'asdf'.")
   val l = Param[List[Double]]("l")
   val m = Param[Int]("m").gt(0).lteq(42)
 
   val desc = CommandDescription(
     name = "option-types-and-definitions",
     quickBlurb = "A demonstration of different option types and definitions.",
-    details = "IN the following pages I offer nothing more than simple facts,
-    " +
-      "plain arguments, and common sense: and have no other preliminaries " +
-      "to settle with the reader, than that he will divest himself of " +
-      "prejudice and prepossession, and suffer his reason and his feelings " +
-      "to determine for themselves that he will put on, or rather that he " +
-      "will not put off, the true character of a man, and generously enlarge "
-    +
-      "his views beyond the present day.",
+    details = "IN the following pages I offer nothing more than simple " +
+    	"facts, plain arguments, and common sense: and have no other " +
+    	"preliminaries to settle with the reader, than that he will divest " +
+    	"himself of prejudice and prepossession, and suffer his reason and his " +
+    	"feelings to determine for themselves that he will put on, or rather " +
+    	"that he will not put off, the true character of a man, and generously " +
+    	"enlarge his views beyond the present day.",
     version = "1.0")
 
   val cmd = CommandLineParser.builder(desc, apply _).
@@ -206,7 +217,7 @@ object OptionTypesAndDefinitions extends App {
 }
 ```
 
-Output is as follows:
+Here is the output of the above program:
 ```
 Usage: option-types-and-definitions [OPTIONS] j k l m 
 
@@ -244,9 +255,11 @@ import scalaz.{ Success, Failure }
 import shapeless._
 
 object Subcommands extends App {
+
   trait AppleSubcommand
-  case class Apple(isBig: Boolean, listOfInts: List[Int], subcommand:
-  AppleSubcommand)
+
+  case class Apple(isBig: Boolean, listOfInts: List[Int],
+    subcommand: AppleSubcommand)
   object Apple {
     val description = CommandDescription(
       name = "apple",
@@ -255,33 +268,42 @@ object Subcommands extends App {
       version = "1.0")
 
     val opts = Flag('b',
-      "Designates that the apple tree/pie is big (as opposed to small).  By
-      default, " +
-        "trees and pies are not big.", longName = "is-big") :: HNil
+      "Designates that the apple tree/pie is big (as opposed to small).  " +
+        "By default, trees and pies are not big.", longName = "is-big") :: HNil
+
     val params = Param[List[Int]]("int1 int2 ...") :: HNil
+
     val subcommands = Tree.cmd :: Pie.cmd :: HNil
 
-    val cmd = CommandLineParser.builder(description, apply _) setOpts (opts)
-    setParams (params) setSubcommands (subcommands) build ()
+    val cmd = CommandLineParser.
+      builder(description, apply _).
+      setOpts(opts).
+      setParams(params).
+      setSubcommands(subcommands).
+      build()
   }
 
   case class Tree(kindOfTree: String, howMany: Int) extends AppleSubcommand
   object Tree {
     val params = Param[String]("kindOfTree") :: Param[Int]("howMany") :: HNil
 
-    val description = CommandDescription("tree", "quickBlurb goes here", "some
-    details", "1.0")
-    val cmd = CommandLineParser.builder(description, apply _) setParams
-    (params) build ()
+    val description = CommandDescription(
+      "tree", "quickBlurb goes here", "some details", "1.0")
+    val cmd = CommandLineParser.
+      builder(description, apply _).
+      setParams(params).
+      build()
   }
 
   case class Pie(calories: Long, numSlices: Int) extends AppleSubcommand
   object Pie {
     val params = Param[Long]("calories") :: Param[Int]("numSlices") :: HNil
-    val description = CommandDescription("pie", "quickBlurb goes here", "some
-  details", "1.0")
-    val cmd = CommandLineParser.builder(description, apply _) setParams
-  (params) build ()
+    val description = CommandDescription(
+      "pie", "quickBlurb goes here", "some details", "1.0")
+    val cmd = CommandLineParser.
+      builder(description, apply _).
+      setParams(params).
+      build()
   }
 
   assert(Apple.cmd.parse("-b 1 2 3 4 5 tree tall 42") ==
@@ -298,8 +320,8 @@ object Subcommands extends App {
 }
 ```
 
-For more examples, see the test specifications [here]() and the additional
-examples [here]().
+For more examples, see the test specifications [here](https://github.com/harveywi/shapeless-commandline/tree/master/core/src/test/scala/com/github/harveywi/commandline) and the additional
+examples [here](https://github.com/harveywi/shapeless-commandline/tree/master/examples/src/scala/com/github/harveywi/commandline/examples/scallop).
 
 Prerequisites
 --------------------------------

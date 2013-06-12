@@ -28,24 +28,34 @@ import shapeless._
 /**
  * Example taken from https://github.com/Rogach/scallop#fancy-things
  *
- * Currently, the KeyValue options require the option flag to appear before each key=value pair, though
- * this should not be too much trouble to fix in a later version.
+ * Currently, the KeyValue options require the option flag to appear before
+ * each key=value pair, though this should not be too much trouble to fix in a
+ * later version.
  */
-case class FancyThings(props: Map[String, String], firstListName: String, firstList: List[Int], secondListName: String, secondList: List[Double])
+case class FancyThings(props: Map[String, String], firstListName: String,
+  firstList: List[Int], secondListName: String, secondList: List[Double])
 object FancyThings extends App {
-  val props = KeyValue[String, String]('E', "String-String properties", "keyString", "valueString", longName = "props")
+  val props = KeyValue[String, String](
+    'E', "String-String properties", "keyString", "valueString",
+    longName = "props")
   val firstListName = Param[String]("firstListName")
   val firstList = Param[List[Int]]("firstList")
   val secondListName = Param[String]("secondListName")
   val secondList = Param[List[Double]]("secondList")
-  val desc = CommandDescription("fancy-things", "A demonstration of fancy things.", "There are no additional notes.", "1.0")
+
+  val desc = CommandDescription(
+    "fancy-things",
+    "A demonstration of fancy things.",
+    "There are no additional notes.", "1.0")
+
   val cmd = CommandLineParser.
     builder(desc, apply _).
     setOpts(props :: HNil).
-    setParams(firstListName :: firstList :: secondListName :: secondList :: HNil).
-    build()
+    setParams(firstListName :: firstList :: secondListName :: secondList ::
+      HNil).build()
 
-  assert(cmd.parse("-Ekey1=value1 -E key2=value2 -E key3=value3 first 1 2 3 second 4 5 6") ==
+  assert(cmd.parse("-Ekey1=value1 -E key2=value2 -E key3=value3 " +
+    "first 1 2 3 second 4 5 6") ==
     Success(FancyThings(
       Map("key1" -> "value1", "key2" -> "value2", "key3" -> "value3"),
       "first", List(1, 2, 3),
